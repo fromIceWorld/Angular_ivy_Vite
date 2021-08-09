@@ -3,27 +3,62 @@ const http = require("http"),
   fs = require("fs"),
   utils = require("./utils"),
   Rollup = require("./roolup"),
-  ts_loader = require("./ts-compiler");
+  resolve = require("@rollup/plugin-node-resolve"),
+  commonRollup = require("rollup-plugin-commonjs");
+ts_loader = require("./ts-compiler");
+let dependenciesCache = {};
 htmlPath = path.resolve(__dirname, "src/index.html");
-// ------------Rollup 预编译 package.json中 dependencies
+// ------------Rollup 预编译 package.json中 dependencies; 但是还有另外一种情况，使用的是依赖的衍生功能，未在 dependencies
+//  例如：rx/oprators;此种情况，特殊考虑，【如果请求的url 是已知的依赖的子集，构建新依赖】
 const package = require("./package.json");
 const dependencies = package.dependencies;
 for (let key in dependencies) {
-  console.log(`正在预编译${key}....`);
-  const prefix = path.resolve(__dirname, "node_modules", key);
+  if (dependenciesCache[key]) {
+    console.log(`${key}已被预处理`);
+  } else {
+    console.log(`正在预编译${key}....`);
+    const prefix = path.resolve(__dirname, "node_modules", key);
+    const module =
+      require(prefix + "/package.json").fesm2015_ivy_ngcc ||
+      require(prefix + "/package.json").module ||
+      require(prefix + "/package.json").browser; // 文件位置,zone.js 是 browser
+    const filePath = path.resolve(prefix, module);
+    const inputOptions = {
+        input: filePath,
+      },
+      outOptions = {
+        file: "./vite/" + (key.endsWith(".js") ? key : key + "/index.js"),
+      };
+    Rollup(inputOptions, outOptions, (dependenciesCache[key] = {}));
+  }
+}
+// 解析 衍生依赖 rx-> rx/operator
+function resolveDep(url) {
+  // 衍生依赖的路径
+
+  const prefix = path.resolve(
+    __dirname,
+    url.replace(/^\/@modules\//, "node_modules/")
+  );
+
   const module =
     require(prefix + "/package.json").fesm2015_ivy_ngcc ||
     require(prefix + "/package.json").module ||
     require(prefix + "/package.json").browser; // 文件位置,zone.js 是 browser
-  console.log(module);
   const filePath = path.resolve(prefix, module);
+
   const inputOptions = {
       input: filePath,
+      plugins: [resolve.nodeResolve(), commonRollup],
     },
     outOptions = {
-      file: "./vite/" + (key.endsWith(".js") ? key : key + ".js"),
+      file: "./vite/" + url.replace(/^\/@modules\//, "") + "/index.js",
     };
-  Rollup(inputOptions, outOptions);
+  return Rollup(
+    inputOptions,
+    outOptions,
+    (dependenciesCache[url.replace(/^\/@modules\//, "")] = {})
+  );
 }
 // 根据路径请求 返回数据
 function getComponentOrModule(path, res, rewrite) {
@@ -99,11 +134,30 @@ const server = http.createServer(function (req, res) {
       __dirname,
       url.replace(/^\/@modules\//, "vite/")
     );
-    // 处理 后缀
-    if (!filePath.endsWith(".js")) {
-      filePath += ".js";
+
+    // 衍生依赖，rx => rx/oprator
+    if (
+      utils.depsUnResolve(
+        Object.keys(dependenciesCache),
+        url.replace(/^\/@modules\//, "")
+      )
+    ) {
+      // 解析衍生依赖，
+      resolveDep(url).then(
+        (result) => {
+          getComponentOrModule(path.resolve(filePath, "index.js"), res, false);
+        },
+        (err) => {
+          console.err(`${url}:衍生依赖解析失败`);
+        }
+      );
+    } else {
+      filePath = utils.ruleURL(
+        __dirname,
+        url.replace(/^\/@modules\//, "vite/")
+      );
+      getComponentOrModule(filePath, res, true);
     }
-    getComponentOrModule(filePath, res);
   } else if (url.endsWith(".ico")) {
     filePath = path.resolve(__dirname, "src", url.replace(/^\//, ""));
     getImage(filePath, res);

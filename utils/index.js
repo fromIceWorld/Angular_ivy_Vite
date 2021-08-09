@@ -8,6 +8,9 @@ function fileStats(path) {
 }
 // 规划 url
 function ruleURL(dirName, url) {
+  if (url.endsWith(".js") || url.endsWith(".ts")) {
+    return path.resolve(dirName, url);
+  }
   let splitUrl = url.replace(/^\//, ""); //去除绝对路径
   let pathArray = splitUrl.split("/"),
     name = pathArray[pathArray.length - 1]; //分割路径
@@ -44,13 +47,29 @@ function searchInDir(dirName) {
 }
 // 重写 js文件中的 import，使指向 固定文件。
 function rewriteImports(content) {
-  return content.replace(/from\s*['|"]([^'"]+)['|"]/g, function ($0, $1) {
-    if ($1.indexOf("/@/") !== 0) {
-      console.log(`from '/@modules/${$1}'`);
-      return `from '/@modules/${$1}'`;
-    } else {
-      return $0;
+  return content.replace(
+    /(\{[^\{\}]+\})\s*from\s*['|"]([^'"]+)['|"]/g,
+    function ($0, $1, $2) {
+      if ($2.indexOf("/@/") !== 0) {
+        console.log($2);
+        return ` ${$1} from '/@modules/${$2}'`;
+      } else {
+        return $0;
+      }
+    }
+  );
+}
+
+// 衍生依赖判定
+function depsUnResolve(keys, key) {
+  let parent = "";
+  keys.forEach((element) => {
+    if (key.indexOf(element + "/") == 0 && key !== element) {
+      parent = element;
+      return;
     }
   });
+  return parent;
 }
-module.exports = { fileStats, ruleURL, rewriteImports };
+
+module.exports = { fileStats, ruleURL, rewriteImports, depsUnResolve };
