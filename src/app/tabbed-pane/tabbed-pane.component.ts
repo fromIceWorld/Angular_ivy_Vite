@@ -8,7 +8,9 @@ import {
 import { COMMON_DIRECTIVES } from "/@/src/app/common";
 import { TabComponent } from "/@/src/app/tabbed-pane/tab.component";
 import { ComponentDeps } from "/@/src/app/util";
-
+@ComponentDeps({
+  directives: [...COMMON_DIRECTIVES],
+})
 @Component({
   selector: "tabbed-pane",
   exportAs: "flightTabbedPane",
@@ -34,9 +36,6 @@ import { ComponentDeps } from "/@/src/app/util";
       <ng-content></ng-content>
     </div>
   `,
-})
-@ComponentDeps({
-  directives: [...COMMON_DIRECTIVES],
 })
 export class TabbedPaneComponent implements AfterContentInit {
   tabs: Array<TabComponent> = [];

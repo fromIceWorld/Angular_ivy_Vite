@@ -1,6 +1,11 @@
 import { platformBrowserDynamic } from "@angular/platform-browser-dynamic";
 import { AppModule } from "/@/src/app/app.module";
-console.log(AppModule, AppModule["ɵinj"], AppModule["ɵmod"]);
+import { TabComponent } from "/@/src/app/tabbed-pane/tab.component";
+console.log(
+  TabComponent["ɵcmp"],
+  TabComponent["ɵfac"],
+  TabComponent["ctorParameters"]
+);
 
 platformBrowserDynamic()
   .bootstrapModule(AppModule)

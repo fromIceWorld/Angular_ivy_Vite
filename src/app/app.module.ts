@@ -1,7 +1,8 @@
 import { NgModule } from "@angular/core";
 import { BrowserModule } from "@angular/platform-browser";
 import { AppComponent } from "/@/src/app/app.component";
-
+import { TabComponent } from "/@/src/app/tabbed-pane/tab.component";
+import { TabbedPaneComponent } from "/@/src/app/tabbed-pane/tabbed-pane.component";
 //
 // We can even get rid of the app module
 // by directly bootstrapping the AppComponent
@@ -19,7 +20,7 @@ import { AppComponent } from "/@/src/app/app.component";
 
 @NgModule({
   imports: [BrowserModule],
-  declarations: [AppComponent],
+  declarations: [AppComponent, TabbedPaneComponent, TabComponent],
   providers: [],
   bootstrap: [AppComponent],
 })

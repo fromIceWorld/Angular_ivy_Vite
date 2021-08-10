@@ -76,8 +76,32 @@
 
 1. *@angular/platform-browser-dynamic*
 
+   引入 @angular/platform-browser-dynamic 时，替换内部的 from “语法” => from "/@modules/"，会匹配到 【 EmitterVisitorContext.prototype.println】函数， 其解析失败。
+
    ```typescript
-   引入 @angular/platform-browser-dynamic 时，替换内部的 from “语法” => from "/@modules/"，使 其解析失败。
+   EmitterVisitorContext.prototype.println = function (from, lastPart) {
+       if (lastPart === void 0) { lastPart = ''; }
+       this.print(from || null, lastPart, true);
+   };
+   `----------------------👇---------------------------`
+   EmitterVisitorContext.prototype.println = function (from, lastPart) {
+           if (lastPart === void 0) { lastPart = ''; }
+           this.print(from '/@modules/| null, lastPart, true);
+   };
+   `-----匹配函数`：
+   function rewriteImports(content) {
+     return content.replace(/from\s*['|"]([^'"]+)['|"]/g, function ($0, $1) {
+       if ($1.indexOf("/@/") !== 0) {
+         console.log(`from '/@modules/${$1}'`);
+         return `from '/@modules/${$1}'`;
+       } else {
+         return $0;
+       }
+     });
+   }
+   
+   匹配函数正常情况下不会匹配到框架函数，出现这种情况的原因？？？？？？？
+   
    ```
 
    
@@ -100,10 +124,52 @@
    ```typescript
    来源：platform-browser.js
    报错信息：`inject() must be called from an injection context`
-   原因：_currentInjector赋值未生效。。。。
+   原因：Rollup打包时，解析impot一起打包了，导致多模块依赖同一个函数，这样就会有三个包，每个包都用同一个函数，使_currentInjector赋值未生效。。。。
+   
    ```
 
    
 
-5. sd
+5. component的 ɵcmp，ɵfac
+
+   ```typescript
+   `ɵcmp`，`ɵfac` 是 @Component 装饰器 给class 添加的静态属性
+   无模块写法，是给 component 的 def属性添加 directiveDefs和 pipeDefs。
+   因此顺序应该是 先执行 Component再执行 无模块赋值装饰器。
+   
+   ```
+
+   
+
+6. 指令，依赖注入报错
+
+   ```typescript
+   `报错信息`：ERROR Error: ASSERTION ERROR: token must be defined [Expected=> null != null <=Actual]
+   `定位`：【return getOrCreateInjectable((/** @type {?} */ (tNode)), lView, resolveForwardRef(token), flags);】
+   
+   `例如`：constructor(@Optional() public tabs: TabbedPaneComponent) {}
+    注入 TabbedPaneComponent，在解析时未收到 参数tabs[token]的值(null)，报错
+    
+   ` 原因`:在生成 指令的 ɵfac 函数时，未找到 注入的服务，为null
+          指令的【ctorParameters】属性为undifined【静态参数属性未添加】
+          
+         `【ctorParameters】 是 Angular-cli 使用ts 特殊处理的，esbuild转换.ts文件会丢失`
+          
+   `解决方法`：使用esbuild 弥补 Angular-cli的能力，
+             Ⅰ 给class添加静态属性 ctorParameters
+   
+   ```
+
+   
+
+7. 使用 esbuild 转换 .ts，
+
+   ```typescript
+   Ⅰ 转换 参数templateUrl，styleUrls的路径为实际内容
+   Ⅱ 给class添加静态属性 ctorParameters
+   ```
+
+   
+
+8. 收到
 

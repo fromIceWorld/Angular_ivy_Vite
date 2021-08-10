@@ -1,8 +1,10 @@
-import { Component, Input, OnInit, Optional } from "@angular/core";
+import { Component, Input, OnInit } from "@angular/core";
 import { COMMON_DIRECTIVES } from "/@/src/app/common";
 import { TabbedPaneComponent } from "/@/src/app/tabbed-pane/tabbed-pane.component";
 import { ComponentDeps } from "/@/src/app/util";
-
+@ComponentDeps({
+  directives: [...COMMON_DIRECTIVES],
+})
 @Component({
   selector: "tab",
   template: `
@@ -12,14 +14,11 @@ import { ComponentDeps } from "/@/src/app/util";
     </div>
   `,
 })
-@ComponentDeps({
-  directives: [...COMMON_DIRECTIVES],
-})
 export class TabComponent implements OnInit {
   public visible: boolean = false;
   @Input() public title: string;
 
-  constructor(@Optional() public tabs: TabbedPaneComponent) {}
+  constructor(private tabs: TabbedPaneComponent) {}
 
   ngOnInit() {
     if (this.tabs) {
