@@ -106,15 +106,21 @@
 
    
 
-2. Zone 需要 独立引入。
+2. Zone 需要 独立引入，全局的styles也需要独立引入。
 
-3. **.component.ts 
+   ```
+   对于需要独立引入的，后续在配置文件中配置？？？？
+   ```
+
+3. templateURL，stylesURL
 
    ```typescript
    解析编译组件时，指令@Component将 元数据 添加到 class.metadata,但未进行转换。
    Angular 在解析时，styleUrls/templateUrl 已被【compiler-cli】转换成字符串。因此会报错
    ------------------------------------------
    Angular在编译前 有 updateDecoratorMetadata【compiler-cli】 解析
+   `解决：当解析到/@/开头的文件时，对styleUrls/templateUrl 进行替换`
+   stylesURL需循环解析依赖【@import url(***)】
    ```
 
    
@@ -125,7 +131,6 @@
    来源：platform-browser.js
    报错信息：`inject() must be called from an injection context`
    原因：Rollup打包时，解析impot一起打包了，导致多模块依赖同一个函数，这样就会有三个包，每个包都用同一个函数，使_currentInjector赋值未生效。。。。
-   
    ```
 
    
@@ -136,7 +141,6 @@
    `ɵcmp`，`ɵfac` 是 @Component 装饰器 给class 添加的静态属性
    无模块写法，是给 component 的 def属性添加 directiveDefs和 pipeDefs。
    因此顺序应该是 先执行 Component再执行 无模块赋值装饰器。
-   
    ```
 
    
@@ -150,14 +154,17 @@
    `例如`：constructor(@Optional() public tabs: TabbedPaneComponent) {}
     注入 TabbedPaneComponent，在解析时未收到 参数tabs[token]的值(null)，报错
     
-   ` 原因`:在生成 指令的 ɵfac 函数时，未找到 注入的服务，为null
+   ` 原因`:在生成 指令的 ɵfac 函数时，未找到自动注入的服务，为null
           指令的【ctorParameters】属性为undifined【静态参数属性未添加】
           
-         `【ctorParameters】 是 Angular-cli 使用ts 特殊处理的，esbuild转换.ts文件会丢失`
+         `【ctorParameters】 是 Angular-cli 使用ts的【design:paramtypes】 特殊处理的，esbuild转换.ts文件会丢失`
           
-   `解决方法`：使用esbuild 弥补 Angular-cli的能力，
-             Ⅰ 给class添加静态属性 ctorParameters
+   `解决方法`：使用@Inject 参数装饰器，可获取注入的服务。
    
+   `元数据反射`：
+   design:paramtypes: 参数类型元数据
+   design:paramtypes：类型元数据
+   design:returntype：返回类型元数据
    ```
 
    
@@ -165,11 +172,76 @@
 7. 使用 esbuild 转换 .ts，
 
    ```typescript
-   Ⅰ 转换 参数templateUrl，styleUrls的路径为实际内容
-   Ⅱ 给class添加静态属性 ctorParameters
+   Ⅰ 转换 参数templateUrl，styleUrls的路径为实际内容【自制URL解析器解决】
+   Ⅱ 给class添加静态属性 ctorParameters【使用@Inject 参数装饰器可解决😁】
    ```
 
    
 
-8. 收到
+8. 热替换
+
+   ```typescript
+   `1.` 依赖的热替换 【处理依赖然后reload？？】
+   `2.` 业务代码的热替换【模块级别的更新？？？？】
+    `2.1` 模板的热替换
+    `2.2` css文件的热替换。 
+   
+   
+   在组件中 html，css,ts 修改时，热替换浏览器中的代码，更新到浏览器。
+   
+   -----------------------------------------------------------------
+   `css 在编译时，Angular会将css编译到组件的$def.styles中，在组件渲染时会将style 插入到页面上`
+   ① 在项目解析css依赖时，存储css依赖的路径，当css依赖修改时，判断修改的css 是否是依赖的css，如果是的话，直接使用websocket 请求对应css
+   `问题`：组件有自己的封装类型，当使用默认封装时，css属性被限制到组件级别，需要组件的id
+          shadow封装时，更有问题。
+   ------------------------------------------------------------------------
+   `html文件修改时，`
+   ```
+
+   
+
+9. 路径问题
+
+   ```typescript
+   `需要根路径配置`
+   
+   在Angular旧有项目中，路径使用的是相对路径，如果使用Angular_ivy_vite,需要统一规范路径,在解析时容易拦截。
+   
+   `业务路径`：使用 /@/开头的绝对路径，在浏览器中会以/@/***的形式发出请求，服务端配置相对应的拦截路由【需根路径】
+   `依赖路径`: 非/@/开头的都是import依赖，已经预解析,再返回时会以/@modules/重写。
+   
+   在业务代码中引入的除了绝对路径的业务代码，就是依赖了，在返回时需要对路径进行重写，以/@modules/开头。在浏览器请求时，直接去预解析区域查找，未找到就是衍生依赖，解析衍生依赖后存储。
+   
+   `后缀省略处理--------------------`
+   import { TabbedPaneComponent } from "/@/src/app/tabbed-pane/tabbed-pane.component";
+   在Angular项目中都是省略后缀的，因此在服务端接收请求后，需要判定请求的路由是文件夹还是文件，
+   如果是文件夹就向下查找index(.js|.ts)
+   如果是文件，就找到上级目录下的文件是否有tabbed-pane.component(.js|.ts)，
+   
+   ------------------------------------------------------------------------
+   问题：迁移旧项目时需重写路径。
+   优化：在启动项目时重写文件中的路径？？？？？？？？【会破坏原有项目】
+   ```
+
+   
+
+10. 资源缓存
+
+   ```
+   在热重载时，如果第二次请求相同的未修改的文件，走缓存。
+   
+   ```
+
+   
+
+11. 热模块替换
+
+    ```
+    webpack使用【Server-Sent Events】单向通信[服务端->浏览器]
+    vite使用【WebSocket】双向通信。
+    ```
+
+    
+
+    
 

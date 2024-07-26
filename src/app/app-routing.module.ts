@@ -1,11 +1,37 @@
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import { NgModule } from "@angular/core";
+import { RouterModule, Routes } from "@angular/router";
+import { FirstComponentComponent } from "/@/src/app/page/first-component/first-component.component";
+import { SecondComponentComponent } from "/@/src/app/page/second-component/second-component.component";
+const routes: Routes = [
+  {
+    path: "first",
+    component: FirstComponentComponent,
+  },
+  {
+    path: "second",
+    component: SecondComponentComponent,
+  },
+  {
+    path: "red",
+    loadChildren: () =>
+      import("./ofmodules/lazy/red/red.module").then((m) => m.RedModule),
+  },
+  {
+    path: "blue",
+    loadChildren: () =>
+      import("./ofmodules/lazy/blue/blue.module").then((m) => m.BlueModule),
+  },
 
-
-const routes: Routes = [];
+  {
+    path: "**",
+    component: FirstComponentComponent,
+  },
+];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
+  imports: [
+    RouterModule.forRoot(routes, { useHash: true, enableTracing: true }),
+  ],
+  exports: [RouterModule],
 })
-export class AppRoutingModule { }
+export class AppRoutingModule {}

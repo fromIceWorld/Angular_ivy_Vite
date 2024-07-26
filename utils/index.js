@@ -51,7 +51,6 @@ function rewriteImports(content) {
     /(\{[^\{\}]+\})\s*from\s*['|"]([^'"]+)['|"]/g,
     function ($0, $1, $2) {
       if ($2.indexOf("/@/") !== 0) {
-        console.log($2);
         return ` ${$1} from '/@modules/${$2}'`;
       } else {
         return $0;
@@ -71,5 +70,7 @@ function depsUnResolve(keys, key) {
   });
   return parent;
 }
+
+// 查找文件中引入的其他文件的
 
 module.exports = { fileStats, ruleURL, rewriteImports, depsUnResolve };

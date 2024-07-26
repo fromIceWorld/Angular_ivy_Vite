@@ -28,10 +28,12 @@
     "@angular/cli": "~9.0.2",
     "@angular/compiler-cli": "~9.0.1",
     "@angular/language-service": "~9.0.1",
+    "@angularclass/hmr": "^3.0.0",
     "@rollup/plugin-node-resolve": "^13.0.4",
     "@types/jasmine": "~3.3.8",
     "@types/jasminewd2": "~2.0.3",
     "@types/node": "^12.11.1",
+    "chokidar": "^3.5.2",
     "codelyzer": "^5.1.2",
     "esbuild": "^0.12.17",
     "jasmine-core": "~3.4.0",
@@ -45,6 +47,7 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "ts-node": "~7.0.0",
     "tslint": "~5.15.0",
-    "typescript": "~3.7.5"
+    "typescript": "~3.7.5",
+    "ws": "^8.0.0"
   }
 }

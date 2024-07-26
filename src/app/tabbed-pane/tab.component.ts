@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from "@angular/core";
+import { Component, Inject, Input, OnInit } from "@angular/core";
 import { COMMON_DIRECTIVES } from "/@/src/app/common";
 import { TabbedPaneComponent } from "/@/src/app/tabbed-pane/tabbed-pane.component";
 import { ComponentDeps } from "/@/src/app/util";
@@ -18,7 +18,7 @@ export class TabComponent implements OnInit {
   public visible: boolean = false;
   @Input() public title: string;
 
-  constructor(private tabs: TabbedPaneComponent) {}
+  constructor(@Inject(TabbedPaneComponent) private tabs) {}
 
   ngOnInit() {
     if (this.tabs) {

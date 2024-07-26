@@ -1,0 +1,10 @@
+@import url(../app.component.css);
+.tabbed-pane {
+  background-color: #f7ecb5;
+  padding: 20px;
+}
+
+a {
+  cursor: pointer;
+  text-decoration: underline;
+}

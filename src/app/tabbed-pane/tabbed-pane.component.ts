@@ -4,6 +4,7 @@ import {
   EventEmitter,
   Input,
   Output,
+  ViewEncapsulation,
 } from "@angular/core";
 import { COMMON_DIRECTIVES } from "/@/src/app/common";
 import { TabComponent } from "/@/src/app/tabbed-pane/tab.component";
@@ -14,32 +15,14 @@ import { ComponentDeps } from "/@/src/app/util";
 @Component({
   selector: "tabbed-pane",
   exportAs: "flightTabbedPane",
-  styles: [
-    `
-      .tabbed-pane {
-        background-color: #f7ecb5;
-        padding: 20px;
-      }
-
-      a {
-        cursor: pointer;
-        text-decoration: underline;
-      }
-    `,
-  ],
-  template: `
-    <div class="tabbed-pane">
-      <span *ngFor="let tab of tabs" style="padding-right:20px;">
-        <a (click)="activate(tab)">{{ tab.title }}</a>
-      </span>
-
-      <ng-content></ng-content>
-    </div>
-  `,
+  encapsulation: ViewEncapsulation.None,
+  styleUrls: ["./tabbed-pane.component.css", "../app.component.css"],
+  templateUrl: "./tabbed-pane.component.html",
 })
 export class TabbedPaneComponent implements AfterContentInit {
   tabs: Array<TabComponent> = [];
   @Input() currentPage: number = 0;
+  @Input() title: string;
   @Output() currentPageChange = new EventEmitter<number>();
 
   get tabsCount() {
